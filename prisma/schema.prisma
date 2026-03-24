@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pipeline {
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  actions     Action[]
+  subscribers Subscriber[]
+  jobs        Job[]
+}
+
+enum ActionType {
+  TRANSFORM
+  FILTER
+  ENRICH // Equivalent to REST_CALL or similar enrichment concept
+}
+
+model Action {
+  id         String     @id @default(uuid())
+  pipelineId String
+  pipeline   Pipeline   @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  type       ActionType
+  config     Json       // Stores JSON like: { "map": { "newKey": "oldKey" } } or { "condition": { "field": "amount", "operator": ">", "value": 100 } }
+  order      Int        // Determines execution order within the pipeline
+}
+
+model Subscriber {
+  id               String            @id @default(uuid())
+  pipelineId       String
+  pipeline         Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  url              String
+  deliveryAttempts DeliveryAttempt[]
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  FILTERED
+}
+
+model Job {
+  id               String            @id @default(uuid())
+  pipelineId       String
+  pipeline         Pipeline          @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  status           JobStatus         @default(PENDING)
+  originalPayload  Json
+  processedPayload Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deliveries       DeliveryAttempt[]
+}
+
+enum DeliveryStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model DeliveryAttempt {
+  id           String         @id @default(uuid())
+  jobId        String
+  job          Job            @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  subscriberId String
+  subscriber   Subscriber     @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  status       DeliveryStatus @default(PENDING)
+  responseCode Int?
+  responseBody String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}

@@ -1,0 +1,32 @@
+### Create a Pipeline
+# @name createPipeline
+POST http://localhost:3000/api/pipelines
+Content-Type: application/json
+
+{
+  "name": "Live Test Pipeline",
+  "actions": [
+    { "type": "TRANSFORM", "config": { "map": { "orderId": "id", "amount": "amount" } }, "order": 1 },
+    { "type": "FILTER", "config": { "field": "amount", "operator": ">", "value": 100 }, "order": 2 },
+    { "type": "ENRICH", "config": { "appendTimestamp": true, "staticData": { "source": "testing" } }, "order": 3 }
+  ],
+  "subscribers": [{ "url": "https://webhook.site/12204c9e-5c4d-44a6-a4c3-b0e77d2472ff" }]
+}
+
+###
+
+### Send a Webhook (Replace pipelineId with the ID from the previous response)
+# @name sendWebhook
+POST http://localhost:3000/api/webhooks/{{createPipeline.response.body.id}}
+Content-Type: application/json
+
+{
+  "id": "ORD-001",
+  "amount": 250,
+  "customer": "John Doe"
+}
+
+###
+
+### Check your Job Status (Replace jobId with the ID from the previous response)
+GET http://localhost:3000/api/jobs/{{sendWebhook.response.body.jobId}}

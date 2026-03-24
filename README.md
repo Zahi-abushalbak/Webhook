@@ -11,9 +11,20 @@ Ensure you have **Node.js 18+** and **Docker** installed.
 docker-compose up -d
 \`\`\`
 
-### 2. Install & Setup Database
+### 2. Setup Environment Variables
+Clone this repository, then create a file named \`.env\` in the root directory and paste the following:
+
+\`\`\`env
+DATABASE_URL=postgresql://webhook_user:webhook_password@localhost:5432/webhook_db?schema=public
+REDIS_HOST=localhost
+REDIS_PORT=6379
+PORT=3000
+\`\`\`
+
+### 3. Install & Setup Database
 \`\`\`bash
 npm install
+npx prisma generate
 npx prisma migrate dev --name init
 \`\`\`
 
